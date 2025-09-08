@@ -1,0 +1,9 @@
+{
+  "Agilitas\\Patchogue": {
+    "site_code": "Agilitas\\Patchogue",
+    "name": "Agilitas Patchogue",
+    "tz": "America/New_York",
+    "device_id": 42,
+    "notes": "Hard-coded site metadata for POC"
+  }
+}
