@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 from dateutil import parser as dtparse
 from fastmcp import FastMCP
+from urllib.parse import quote
 
 # ---------- constants ----------
 PKG_DIR = Path(__file__).resolve().parent
@@ -15,6 +16,7 @@ TAGS_PATH = PKG_DIR / "tags.json"
 
 DEFAULT_INTERVAL = "1h"
 DEFAULT_SUMMARY = "Average"
+FILTER_EXPR = "'.'<>\"No Data\" and '.' <>\"Bad\""
 
 mcp = FastMCP("EnergyIQ (FastMCP)")
 
@@ -29,6 +31,11 @@ def _load_json(p: Path) -> Any:
         print(f"[ERROR] Failed to load {p}: {e}")
         raise
 
+def _encode_uri_like_js(url: str) -> str:
+    # Approx JS encodeURI: keep these characters unescaped
+    safe = ":/?&=,+$#-_.!~*'()|\\"
+    return quote(url, safe=safe)
+
 def _utc_now_hour_floor() -> datetime:
     now = datetime.now(timezone.utc)
     return now.replace(minute=0, second=0, microsecond=0)
@@ -39,7 +46,7 @@ def _ensure_iso_utc(s: Optional[str], default_dt: datetime) -> str:
     dt = dtparse.isoparse(s)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+    return dt.astimezone(timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def _coerce_tags(tags_input, tags_map, site_code) -> List[str]:
     if not tags_input:
@@ -51,6 +58,7 @@ def _coerce_tags(tags_input, tags_map, site_code) -> List[str]:
         return [p.strip() for p in tags_input.split(",") if p.strip()]
     raise ValueError("tags must be a list or comma-separated string")
 
+
 def _build_endpoint(
     base_url: str,
     from_iso: str,
@@ -60,19 +68,21 @@ def _build_endpoint(
     summary_type: str,
     tags: List[str]
 ) -> str:
-    if not base_url.endswith("/"):
-        base_url += "/"
+    base = base_url if base_url.endswith("/") else base_url + "/"
+
+    # Build raw string 
     qp = (
         f"?from_date={from_iso}"
         f"&to_date={to_iso}"
         f"&device_id={device_id}"
         f"&interval={interval}"
-        f"&filterExpression=%27.%27%3C%3E%22No%20Data%22%20and%20%27.%27%20%3C%3E%20%22Bad%22"
+        f"&filterExpression={FILTER_EXPR}"
         f"&summaryType={summary_type}"
     )
     for t in tags:
-        qp += f"&tag={t}"
-    endpoint = base_url + qp.lstrip("?")
+        qp += f"&tag={t}"                  
+
+    endpoint = _encode_uri_like_js(base + qp)
     print(f"[INFO] Built endpoint: {endpoint}")
     return endpoint
 

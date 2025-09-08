@@ -2,8 +2,15 @@
   "Agilitas\\Patchogue": {
     "site_code": "Agilitas\\Patchogue",
     "name": "Agilitas Patchogue",
+    "region": "NYISO",
     "tz": "America/New_York",
-    "device_id": 42,
-    "notes": "Hard-coded site metadata for POC"
+    "device_id": 42
+  },
+  "Agilitas\\Borden Ave": {
+    "site_code": "Agilitas\\Borden Ave",
+    "name": "Agilitas Borden Ave",
+    "region": "NYISO",
+    "tz": "America/New_York",
+    "device_id": 38
   }
 }
