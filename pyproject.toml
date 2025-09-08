@@ -1,0 +1,14 @@
+[project]
+name = "energyiq-fastmcp"
+version = "0.1.0"
+description = "POC FastMCP server for site info, tags, and data"
+requires-python = ">=3.10"
+
+dependencies = [
+  "fastmcp==2.12.2",
+  "httpx==0.28.1",
+  "python-dateutil==2.9.0.post0"
+]
+
+[project.scripts]
+energyiq-mcp = "energyiq_fastmcp.server:main"
