@@ -116,9 +116,9 @@ def site_details(site_code: Optional[str] = None) -> Dict[str, Any]:
     """
     print(f"[TOOL] site_details called with site_code={site_code}")
     sites = _load_json(SITES_PATH)
-    
+
     if site_code:
-        # Exact match first
+        # Exact match first and second
         if site_code in sites:
             print(f"[INFO] Found exact match for site_code: {site_code}")
             return sites[site_code]
