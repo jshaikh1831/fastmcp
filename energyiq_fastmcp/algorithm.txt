@@ -1,0 +1,55 @@
+Curtailment Decision Algorithm Overview
+Purpose:
+This algorithm determines whether to curtail (reduce) power generation at a site based on several input factors, such as market prices, site status, and operational thresholds. It logs key decisions for transparency.
+
+Inputs:
+LMP (Locational Marginal Price): Market price for electricity at the site.
+Timer: Tracks how long certain conditions have been met.
+LMP Threshold: Price the site is willing to accept.
+EcoMax: Maximum allowable output.
+Unit Status: Whether the unit is ON or OFF.
+Dispatch: Current dispatch order.
+Dispatch Max: Maximum dispatch value.
+MW (Megawatt Output): Current generation output.
+
+Site Name
+
+Main Steps:
+Check Site Output:
+
+If either EcoMax or MW is greater than 0.5, proceed to curtailment logic.
+If both values are low, curtailment is not needed; set outputs to "no curtailment" and log the reason.
+
+Curtailment Logic Path:
+
+
+Use LMP/Threshold Price Comparison:
+If LMP ≤ Threshold:
+If Unit is ON, curtail and keep current dispatch.
+If Unit is OFF, curtail and set dispatch to zero.
+If LMP > Threshold:
+Use EcoMax Logic (see below).
+If the Threshold Flag is OFF:
+Use EcoMax Logic only.
+EcoMax Logic (without LMP consideration):
+
+If Unit is ON:
+If the difference between EcoMax and Dispatch > 0.2:
+If Timer > 2.5 minutes, curtail and keep current dispatch.
+If Timer ≤ 2.5 minutes, do not curtail and set dispatch to max.
+If EcoMax - Dispatch ≤ 0.2, do not curtail and set dispatch to max.
+If Unit is OFF, do not curtail and set dispatch to max.
+
+Logging:
+
+At each step, decisions and key data are logged for traceability (site, values, decision).
+Outputs:
+Curtailment Command: Whether to curtail generation (1 = Yes, 0 = No)
+Dispatch Value: What the new dispatch order should be
+Timer: How long the site has been in its current state
+IC (Intermediate Counter): Tracks how long curtailment conditions have persisted
+
+Summary
+The algorithm carefully checks current market and site conditions before deciding to curtail generation.
+It ensures curtailment happens only when justified by both economic and operational factors.
+The process is transparent, with each key step and data point logged for review.

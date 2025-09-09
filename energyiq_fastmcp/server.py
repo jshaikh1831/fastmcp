@@ -13,6 +13,7 @@ from urllib.parse import quote
 PKG_DIR = Path(__file__).resolve().parent
 SITES_PATH = PKG_DIR / "sites.json"
 TAGS_PATH = PKG_DIR / "tags.json"
+ALGORITHM_PATH = PKG_DIR / "algorithm.txt"
 
 DEFAULT_INTERVAL = "1h"
 DEFAULT_SUMMARY = "Average"
@@ -197,6 +198,142 @@ async def get_data(
     items = [{"Value": x["Value"]} for x in _mock_series(from_iso, to_iso, step)]
     print(f"[INFO] Returning MOCK data, items={len(items)}")
     return {"site_code": site_code, "tag": tag, "items": items}
+
+
+@mcp.tool
+def evaluate_algorithm(
+    lmp: float,
+    threshold: float,
+    ecomax: float,
+    unit_status: str,
+    dispatch: float,
+    dispatch_max: float,
+    mw: float,
+    timer: float = 0.0,
+    threshold_flag: bool = True,
+    site_name: str = "Unknown Site"
+) -> Dict[str, Any]:
+    """
+    Evaluate the curtailment decision algorithm based on the algorithm.txt specification.
+    
+    Args:
+        lmp: Locational Marginal Price (market price for electricity)
+        threshold: LMP threshold price the site is willing to accept
+        ecomax: Maximum allowable output
+        unit_status: Whether the unit is "ON" or "OFF"
+        dispatch: Current dispatch order
+        dispatch_max: Maximum dispatch value
+        mw: Current generation output (Megawatt)
+        timer: Time in minutes that conditions have been met (default: 0.0)
+        threshold_flag: Whether to use LMP/threshold comparison (default: True)
+        site_name: Name of the site being evaluated (default: "Unknown Site")
+    
+    Returns:
+        Dictionary containing curtailment decision, dispatch value, and evaluation log
+    """
+    print(f"[TOOL] evaluate_algorithm called for site={site_name}")
+    
+    # Read algorithm specification
+    try:
+        with ALGORITHM_PATH.open("r", encoding="utf-8") as f:
+            algorithm_text = f.read()
+    except Exception as e:
+        return {
+            "error": f"Failed to read algorithm specification: {e}",
+            "curtailment_command": 0,
+            "dispatch_value": dispatch,
+            "timer": timer
+        }
+    
+    # Initialize result
+    result = {
+        "site_name": site_name,
+        "inputs": {
+            "lmp": lmp,
+            "threshold": threshold,
+            "ecomax": ecomax,
+            "unit_status": unit_status,
+            "dispatch": dispatch,
+            "dispatch_max": dispatch_max,
+            "mw": mw,
+            "timer": timer,
+            "threshold_flag": threshold_flag
+        },
+        "curtailment_command": 0,
+        "dispatch_value": dispatch,
+        "timer": timer,
+        "evaluation_log": [],
+        "algorithm_reference": "Based on algorithm.txt curtailment decision specification"
+    }
+    
+    log = result["evaluation_log"]
+    
+    # Step 1: Check Site Output
+    log.append(f"Step 1: Checking site output - EcoMax: {ecomax}, MW: {mw}")
+    
+    if ecomax <= 0.5 and mw <= 0.5:
+        log.append("Both EcoMax and MW are ≤ 0.5 - no curtailment needed")
+        result["curtailment_command"] = 0
+        result["dispatch_value"] = dispatch
+        log.append(f"Decision: No curtailment, dispatch remains {dispatch}")
+        return result
+    
+    log.append("Site output sufficient for curtailment evaluation - proceeding to curtailment logic")
+    
+    # Step 2: Curtailment Logic Path
+    if threshold_flag:
+        log.append(f"Step 2: Using LMP/Threshold comparison - LMP: {lmp}, Threshold: {threshold}")
+        
+        if lmp <= threshold:
+            log.append(f"LMP ({lmp}) ≤ Threshold ({threshold}) - curtailment triggered")
+            result["curtailment_command"] = 1
+            
+            if unit_status.upper() == "ON":
+                log.append("Unit is ON - curtailing and keeping current dispatch")
+                result["dispatch_value"] = dispatch
+            else:
+                log.append("Unit is OFF - curtailing and setting dispatch to zero")
+                result["dispatch_value"] = 0
+                
+        else:
+            log.append(f"LMP ({lmp}) > Threshold ({threshold}) - using EcoMax logic")
+            result = _evaluate_ecomax_logic(result, log, ecomax, dispatch, dispatch_max, unit_status, timer)
+    else:
+        log.append("Step 2: Threshold flag is OFF - using EcoMax logic only")
+        result = _evaluate_ecomax_logic(result, log, ecomax, dispatch, dispatch_max, unit_status, timer)
+    
+    log.append(f"Final Decision: Curtailment={result['curtailment_command']}, Dispatch={result['dispatch_value']}")
+    return result
+
+
+def _evaluate_ecomax_logic(result, log, ecomax, dispatch, dispatch_max, unit_status, timer):
+    """Helper function to evaluate EcoMax logic"""
+    
+    if unit_status.upper() == "ON":
+        log.append(f"Unit is ON - checking EcoMax logic: EcoMax={ecomax}, Dispatch={dispatch}")
+        ecomax_dispatch_diff = ecomax - dispatch
+        log.append(f"EcoMax - Dispatch = {ecomax_dispatch_diff}")
+        
+        if ecomax_dispatch_diff > 0.2:
+            log.append(f"Difference > 0.2 - checking timer: {timer} minutes")
+            if timer > 2.5:
+                log.append("Timer > 2.5 minutes - curtailing and keeping current dispatch")
+                result["curtailment_command"] = 1
+                result["dispatch_value"] = dispatch
+            else:
+                log.append("Timer ≤ 2.5 minutes - no curtailment, setting dispatch to max")
+                result["curtailment_command"] = 0
+                result["dispatch_value"] = dispatch_max
+        else:
+            log.append("EcoMax - Dispatch ≤ 0.2 - no curtailment, setting dispatch to max")
+            result["curtailment_command"] = 0
+            result["dispatch_value"] = dispatch_max
+    else:
+        log.append("Unit is OFF - no curtailment, setting dispatch to max")
+        result["curtailment_command"] = 0
+        result["dispatch_value"] = dispatch_max
+    
+    return result
 
 
 def main():

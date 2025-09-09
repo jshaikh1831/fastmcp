@@ -1,11 +1,20 @@
 {
   "Agilitas\\Patchogue": [
     "Agilitas\\Patchogue|MW",
-    "Agilitas\\Patchogue|SOC",
-    "Agilitas\\Patchogue|Temp"
+    "Agilitas\\Patchogue|SOC"
   ],
   "Agilitas\\Borden Ave": [
     "Agilitas\\Borden Ave|MW",
     "Agilitas\\Borden Ave|SOC"
+  ],
+   "DeShaw\\Iris Solar": [
+    "DEShaw\\Iris|MW",
+    "DEShaw\\Iris|Dispatch_ISO",
+     "DEShaw\\Iris|Dispatch_MW",
+     "DEShaw\\Iris|ECO Max",
+     "DEShaw\\Iris|LMP Threshold",
+     "DEShaw\\Iris|Unit Status",
+      "DEShaw\\Iris|LMP",
+     "DEShaw\\Iris|Timer"
   ]
 }

@@ -12,5 +12,12 @@
     "region": "NYISO",
     "tz": "America/New_York",
     "device_id": 38
+  },
+   "DeShaw\\Iris Solar": {
+    "site_code": "DeShaw\\Iris Solar",
+    "name": "DeShaw\\Iris Solar",
+    "region": "MISO",
+    "tz": "America/New_York",
+    "device_id": 55
   }
 }
