@@ -116,8 +116,19 @@ def site_details(site_code: Optional[str] = None) -> Dict[str, Any]:
     """
     print(f"[TOOL] site_details called with site_code={site_code}")
     sites = _load_json(SITES_PATH)
-    if site_code and site_code in sites:
-        return sites[site_code]
+    
+    if site_code:
+        # Exact match first
+        if site_code in sites:
+            print(f"[INFO] Found exact match for site_code: {site_code}")
+            return sites[site_code]
+        
+        # If no exact match, try partial matching or provide helpful error
+        available_sites = list(sites.keys())
+        print(f"[ERROR] Site code '{site_code}' not found. Available sites: {available_sites}")
+        raise ValueError(f"Site code '{site_code}' not found. Available sites: {available_sites}")
+    
+    # No site_code provided, return first site
     key = next(iter(sites.keys()))
     print(f"[INFO] No site_code provided, defaulting to {key}")
     return sites[key]
