@@ -1,18 +1,4 @@
 {
-  "Agilitas\\Patchogue": {
-    "site_code": "Agilitas\\Patchogue",
-    "name": "Agilitas Patchogue",
-    "region": "NYISO",
-    "tz": "America/New_York",
-    "device_id": 42
-  },
-  "Agilitas\\Borden Ave": {
-    "site_code": "Agilitas\\Borden Ave",
-    "name": "Agilitas Borden Ave",
-    "region": "NYISO",
-    "tz": "America/New_York",
-    "device_id": 38
-  },
    "DeShaw\\Iris Solar": {
     "site_code": "DeShaw\\Iris Solar",
     "name": "DeShaw\\Iris Solar",
